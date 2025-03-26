@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        .container { max-width: 400px; margin: auto; }
+        .hidden { display: none; }
+        input, button { margin: 5px; padding: 10px; width: 100%; }
+        .chat-container { border: 1px solid #ddd; padding: 10px; height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container" id="welcome-screen">
+        <h1>Medical Chatbot</h1>
+        <button onclick="showLogin()">Login</button>
+        <button onclick="showRegister()">Register</button>
+    </div>
+
+    <div class="container hidden" id="login-screen">
+        <h2>Login</h2>
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div class="container hidden" id="register-screen">
+        <h2>Register</h2>
+        <input type="text" id="register-username" placeholder="Username">
+        <input type="password" id="register-password" placeholder="Password">
+        <button onclick="register()">Register</button>
+    </div>
+
+    <div class="container hidden" id="chat-screen">
+        <h2>Ask the Chatbot</h2>
+        <div class="chat-container" id="chat-box"></div>
+        <input type="text" id="user-query" placeholder="Ask a question...">
+        <button onclick="sendQuery()">Send</button>
+    </div>
+
+    <script>
+        function showLogin() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('welcome-screen').classList.add('hidden');
+            document.getElementById('register-screen').classList.remove('hidden');
+        }
+
+        function login() {
+            let username = document.getElementById('login-username').value;
+            let password = document.getElementById('login-password').value;
+            fetch('http://127.0.0.1:8000/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `username=${username}&password=${password}`
+            }).then(res => res.json()).then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('token', data.access_token);
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('chat-screen').classList.remove('hidden');
+                }
+            });
+        }
+
+        function register() {
+            let username = document.getElementById('register-username').value;
+            let password = document.getElementById('register-password').value;
+            fetch('http://127.0.0.1:8000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            }).then(res => res.json()).then(() => showLogin());
+        }
+
+        function sendQuery() {
+            let query = document.getElementById('user-query').value;
+            let token = localStorage.getItem('token');
+            fetch(`http://127.0.0.1:8000/chatbot?query=${query}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(res => res.json()).then(data => {
+                let chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML += `<p><b>You:</b> ${query}</p>`;
+                chatBox.innerHTML += `<p><b>Bot:</b> ${data.response}</p>`;
+                document.getElementById('user-query').value = '';
+            });
+        }
+    </script>
+</body>
+</html>
